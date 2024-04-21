@@ -1,0 +1,324 @@
+Parameters:
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS infrastructure deployment with VPC, subnets, NAT gateway, load balancer, and autoscaling group.'
+ 
+Resources:
+  AppVPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: '10.14.0.0/16'
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: 'Name'
+          Value: 'app1'
+        - Key: 'Service'
+          Value: 'application1'
+        - Key: 'Owner'
+          Value: 'Phillip'
+        - Key: 'Planet'
+          Value: 'Earth'
+ 
+  PublicSubnetOne:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: AppVPC
+      CidrBlock: '10.14.1.0/24'
+      AvailabilityZone: 'us-east-1a'
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: 'Name'
+          Value: 'public-subnet-1'
+ 
+  PublicSubnetTwo:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: AppVPC
+      CidrBlock: '10.14.2.0/24'
+      AvailabilityZone: 'us-east-1b'
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: 'Name'
+          Value: 'public-subnet-2'
+ 
+  PublicSubnetThree:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: AppVPC
+      CidrBlock: '10.14.3.0/24'
+      AvailabilityZone: 'us-east-1c'
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: 'Name'
+          Value: 'public-subnet-3'
+         
+ 
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: 'Name'
+          Value: 'app1_igw'
+ 
+  GatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: AppVPC
+      InternetGatewayId: InternetGateway
+ 
+  NatEIP:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: 'vpc'
+ 
+  NatGateway:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: NatEIP.AllocationId
+      SubnetId: PublicSubnetOne
+      Tags:
+        - Key: 'Name'
+          Value: 'app1_nat'
+         
+  PrivateSubnetOne:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: AppVPC
+      CidrBlock: '10.14.11.0/24'
+      AvailabilityZone: 'us-east-1a'
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: 'Name'
+          Value: 'private-subnet-1'
+ 
+  PrivateSubnetTwo:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: AppVPC
+      CidrBlock: '10.14.12.0/24'
+      AvailabilityZone: 'us-east-1b'
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: 'Name'
+          Value: 'private-subnet-2'
+ 
+  PrivateSubnetThree:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: AppVPC
+      CidrBlock: '10.14.13.0/24'
+      AvailabilityZone: 'us-east-1c'
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: 'Name'
+          Value: 'private-subnet-3'
+ 
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: AppVPC
+      Tags:
+        - Key: 'Name'
+          Value: 'public'
+ 
+  PublicRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: PublicRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: InternetGateway
+ 
+ 
+  PublicSubnetRouteTableAssociationOne:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: PublicSubnetOne
+      RouteTableId: PublicRouteTable
+ 
+  PublicSubnetRouteTableAssociationTwo:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: PublicSubnetTwo
+      RouteTableId: PublicRouteTable
+ 
+  PublicSubnetRouteTableAssociationThree:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: PublicSubnetThree
+      RouteTableId: PublicRouteTable
+ 
+  PrivateRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: AppVPC
+      Tags:
+        - Key: 'Name'
+          Value: 'private'
+ 
+  PrivateRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: PrivateRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: NatGateway
+ 
+  PrivateSubnetRouteTableAssociationOne:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: PrivateSubnetOne
+      RouteTableId: PrivateRouteTable
+ 
+  PrivateSubnetRouteTableAssociationTwo:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: PrivateSubnetTwo
+      RouteTableId: PrivateRouteTable
+ 
+  PrivateSubnetRouteTableAssociationThree:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: PrivateSubnetThree
+      RouteTableId: PrivateRouteTable
+ 
+  SecurityGroupServers:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Security group for servers'
+      VpcId: AppVPC
+      SecurityGroupIngress:
+        - IpProtocol: 'tcp'
+          FromPort: 80
+          ToPort: 80
+          CidrIp: '0.0.0.0/0'
+          Description: 'Allow HTTP traffic'
+        - IpProtocol: "tcp"
+          FromPort: 22
+          ToPort: 22
+          CidrIp: "0.0.0.0/0"
+          Description: 'Allow SSH traffic'
+ 
+  LoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Subnets:
+        - PublicSubnetOne
+        - PublicSubnetTwo
+        - PublicSubnetThree
+      SecurityGroups:
+        - SecurityGroupServers
+      Type: 'application'
+      Tags:
+        - Key: 'Name'
+          Value: 'App1LoadBalancer'
+ 
+  TargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      VpcId: AppVPC
+      Port: 80
+      Protocol: 'HTTP'
+      HealthCheckEnabled: true
+      HealthCheckPath: '/'
+      HealthCheckProtocol: 'HTTP'
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 5
+      UnhealthyThresholdCount: 2
+      Matcher:
+        HttpCode: '200'
+      TargetType: 'instance'
+      Tags:
+        - Key: 'Name'
+          Value: 'App1TargetGroup'
+ 
+  Listener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      LoadBalancerArn: LoadBalancer
+      Protocol: 'HTTP'
+      Port: 80
+      DefaultActions:
+        - Type: 'forward'
+          TargetGroupArn: TargetGroup
+
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: Creating DynamoDB tables with CloudFormation
+Resources:
+  myTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: MyApplicationData
+      AttributeDefinitions:
+          AttributeName: ID
+          AttributeType: S
+          BillingMode: PAY_PER_REQUEST
+      KeySchema:
+          AttributeName: ID
+          KeyType: HASH
+
+
+
+  AutoScalingGroup:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: LaunchTemplate
+        Version: LaunchTemplate.LatestVersionNumber
+      MinSize: '3'
+      MaxSize: '15'
+      DesiredCapacity: '6'
+      VPCZoneIdentifier: [PrivateSubnetOne, PrivateSubnetTwo, PrivateSubnetThree]
+      TargetGroupARNs: [TargetGroup]
+      HealthCheckType: 'ELB'
+      HealthCheckGracePeriod: 300
+      Tags:
+        - Key: 'Name'
+          PropagateAtLaunch: true
+          Value: 'app1-instance'
+ 
+  LaunchTemplate:
+    Type: 'AWS::EC2::LaunchTemplate'
+    Properties:
+      LaunchTemplateData:
+        ImageId: 'ami-0f673487d7e5f89ca'
+        InstanceType: 't2.micro'
+        KeyName: 'terraform'
+        SecurityGroupIds:
+          - SecurityGroupServers
+        UserData:
+         Fn::Base64: |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          # Fetch and store metadata
+          TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+          LOCAL_IPV4=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/local-ipv4)
+          AVAILABILITY_ZONE=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+          MAC_ADDRESS=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/mac)
+          VPC_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$MAC_ADDRESS/vpc-id)
+          # Generate the HTML content
+          cat <<EOF > /var/www/html/index.html
+          <!doctype html>
+          <html lang="en" class="h-100">
+          <head>
+          <title>EC2 Instance Details</title>
+          </head>
+          <body>
+          <div>
+          <h1>Instance Details</h1>
+          <p><strong>Instance Name:</strong> $(hostname -f)</p>
+          <p><strong>Instance Private IP Address:</strong> $LOCAL_IPV4</p>
+          <p><strong>Availability Zone:</strong> $AVAILABILITY_ZONE</p>
+          <p><strong>Virtual Private Cloud (VPC):</strong> $VPC_ID</p>
+          </div>
+          </body>
+          </html>
+          EOF
+ 
+Outputs:
+  LoadBalancerDNSName:
+    Description: 'DNS Name of the Load Balancer'
+    Value: LoadBalancer.DNSName

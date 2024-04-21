@@ -1,0 +1,32 @@
+Homework
+Participants are required to build a DynamoDB table for application data storage and configure a CloudWatch alarm to monitor system health, based on provided specifications. They will have to incorporate these resources into the above existing AWS CloudFormation infrastructure.
+
+Create a DynamoDB Table:
+Objective: Design and implement a DynamoDB table named MyApplicationData intended for storing generic application data.
+
+Specifications:
+Primary Key: id (String)
+
+Attributes: Participants should decide what additional attributes might be useful for application data.
+Billing Mode: PAY_PER_REQUEST to accommodate varied access patterns.
+
+Tags:
+Key: 'Name' Value: 'MyDynamoDBTable'
+
+Set Up a CloudWatch Alarm for High CPU Utilization:
+Objective: Configure a CloudWatch alarm to monitor the CPU utilization of an AutoScaling group, ensuring it triggers under specified conditions.
+
+Specifications:
+Metric to Monitor: CPU Utilization of the EC2 instances within the AutoScaling group.
+Threshold: Alarm when CPU utilization exceeds 75% for more than 5 consecutive minutes.
+Notification: Configure an SNS topic (or another notification system) to alert when the alarm triggers.
+
+Alarm Name: 'High CPU Utilization'
+Additional Details: Provide the complete alarm configuration, specifying the namespace, statistic, period, and evaluation periods.
+
+Outputs:
+Define outputs in the CloudFormation template that provides the name of the DynamoDB table and an output for the CloudWatch Alarm ARN in your CloudFormation template.
+
+
+
+cfn-lint C:\Users\Julie\terraform\JRemo\20240421\20240414 homework
